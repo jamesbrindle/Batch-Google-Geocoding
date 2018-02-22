@@ -1,0 +1,16 @@
+.vs
+.user
+
+GoogleGeolocation.sln.DotSettings.user
+
+packages
+GoogleGeolocation/packages
+
+GoogleGeolocation/bin
+GoogleGeolocation/obj
+GoogleGeolocation/GoogleGeolocation.csproj.user
+
+Testing/bin
+Testing/obj
+Testing/Testing.csproj.user
+
