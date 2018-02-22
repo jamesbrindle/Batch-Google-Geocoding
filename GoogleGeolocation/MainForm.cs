@@ -197,7 +197,7 @@ namespace GoogleGeolocation
             InitializeComponent();
             EnsureBrowserEmulationEnabled();
 
-            lblLatLong.Text = "Hello, Select Me";
+            lblLatLong.Text = "Latitude / Longitude:";
             lblLatLong.ReadOnly = true;
             lblLatLong.BorderStyle = 0;
             lblLatLong.BackColor = this.BackColor;
@@ -213,7 +213,7 @@ namespace GoogleGeolocation
             tbAddressField.Focus();
             tbAddressField.Select();
 
-            LoadMapHTML("Centenary Court, Croft St, Burnley BB11 2ED");
+            LoadMapHTML("Centenary Court, Croft St, Burnley BB11 2ED", true);
         }
 
         private void ProcessAddresses()
@@ -263,9 +263,9 @@ namespace GoogleGeolocation
                     {
                         AppendResults("[" + parts[1] + "\t" + "Limited Reached" + "\t");
                     }
-                    else if (latLong[0].Contains("The remote server returned an error"))
+                    else if (latLong[0].Contains("The remote server returned an error") || latLong[0].Contains("instance of an object"))
                     {
-                        AppendResults("[" + parts[1] + "\t" + "Server Error" + "\t");
+                        AppendResults("[" + parts[1] + "\t" + "Server / API Key Error" + "\t");
                     }
                     else if (latLong[0] == "Fail")
                     {
@@ -288,7 +288,7 @@ namespace GoogleGeolocation
 
                     SetProcessInfo(counter, addresses.Length);
 
-                    if (latLong[0] == "Over Limit")
+                    if (latLong[0] == "Over Limit" || latLong[0].Contains("The remote server returned an error") || latLong[0].Contains("instance of an object"))
                     {
                         SetEnd();
                         processThread.Abort();
@@ -324,12 +324,29 @@ namespace GoogleGeolocation
             }
         }
 
-        private void LoadMapHTML(string address)
+        private void LoadMapHTML(string address, bool initialLoad = false)
         {
             if (string.IsNullOrEmpty(tbAPIKey.Text))
             {
-                tbAPIKey.BackColor = ColourHelper.HexStringToColor("f98a85");
-                MessageBox.Show("Google API field cannot be empty", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!initialLoad)
+                {
+                    tbAPIKey.BackColor = ColourHelper.HexStringToColor("f98a85");
+                    MessageBox.Show("Google API field cannot be empty", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    wbMap.Navigate("about:blank");
+                    try
+                    {
+                        if (wbMap.Document != null)
+                        {
+                            wbMap.Document.Write(string.Empty);
+                        }
+                    }
+                    catch
+                    { } // do nothing with this
+                    wbMap.DocumentText = HtmlHelper.GenerateMapHtml("", tbAPIKey.Text);
+                }
             }
             else
             {
@@ -350,11 +367,11 @@ namespace GoogleGeolocation
                 }
                 if (latLong[0].Contains("Over Limit"))
                     lblLatLong.Text = "Latitude / Longitude:   " + "Query limit reached";
-                else if (latLong[0].Contains("The remote server returned an error"))
-                    lblLatLong.Text = "Latitude / Longitude:   " + "Server error";
+                else if (latLong[0].Contains("The remote server returned an error") || latLong[0].Contains("instance of an object"))
+                    lblLatLong.Text = "Latitude / Longitude:   " + "Server / API key error";
                 else
                 {
-                    if (latLong[0] == "Fail")
+                    if (latLong[0].Contains("Fail"))
                         lblLatLong.Text = "Latitude / Longitude:   " + "Failed to find coordinates";
                     else
                     {
@@ -419,16 +436,8 @@ namespace GoogleGeolocation
             }
             catch (Exception e)
             {
-                if (e.Message.Contains("instance of an object"))
-                {
-                    lat = "Fail";
-                    lng = "Fail";
-                }
-                else
-                {
-                    lat = "Fail: " + e.Message;
-                    lng = "Fail: " + e.Message;
-                }
+                lat = "Fail: " + e.Message;
+                lng = "Fail: " + e.Message;
             }
 
             List<string> returnList = new List<string>();
